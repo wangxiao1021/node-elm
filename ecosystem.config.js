@@ -21,7 +21,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'root',
-      host: ['139.224.234.213'],
+      host: ['127.0.0.1'],
       port: '22',
       ref : 'origin/master',
       repo: 'git@github.com:bailicangdu/node-elm.git',

@@ -13,6 +13,7 @@ class Admin extends AddressComponent {
 		this.register = this.register.bind(this)
 		this.encryption = this.encryption.bind(this)
 		this.updateAvatar = this.updateAvatar.bind(this)
+		this.changePass = this.changePass.bind(this)
 	}
 	async login(req, res, next){
 		const form = new formidable.IncomingForm();
@@ -49,8 +50,8 @@ class Admin extends AddressComponent {
 					const admin_id = await this.getId('admin_id');
 					const cityInfo = await this.guessPosition(req);
 					const newAdmin = {
-						user_name, 
-						password: newpassword, 
+						user_name,
+						password: newpassword,
 						id: admin_id,
 						create_time: dtime().format('YYYY-MM-DD HH:mm'),
 						admin: adminTip,
@@ -58,17 +59,24 @@ class Admin extends AddressComponent {
 						city: cityInfo.city
 					}
 					await AdminModel.create(newAdmin)
-					req.session.admin_id = admin_id;
-					res.send({
+						req.session.admin_id = admin_id; 
+						res.send({
 						status: 1,
 						success: '注册管理员成功',
+					})
+
+					// console.log('无此用户');
+					res.send({
+						status: 1,
+						type: 'ERROR_PASSWORD',
+						message: '账号或密码输入错误',
 					})
 				}else if(newpassword.toString() != admin.password.toString()){
 					console.log('管理员登录密码错误');
 					res.send({
 						status: 0,
 						type: 'ERROR_PASSWORD',
-						message: '该用户已存在，密码输入错误',
+						message: '账号或密码输入错误',
 					})
 				}else{
 					req.session.admin_id = admin.id;
@@ -152,6 +160,64 @@ class Admin extends AddressComponent {
 			}
 		})
 	}
+	async changePass(req, res, next){
+		const form = new formidable.IncomingForm();
+		form.parse(req, async (err, fields, files) => {
+			if (err) {
+				res.send({
+					status: 0,
+					type: 'FORM_DATA_ERROR',
+					message: '表单信息错误'
+				})
+				return
+			}
+			const {user_name, password, newPassword} = fields;
+			console.log(user_name);
+			console.log(newPassword);
+			try{
+				if (!user_name) {
+					throw new Error('用户名错误')
+				}else if(!password){
+					throw new Error('密码错误')
+				} else if (!newPassword) {
+					throw new Error('新密码不能为空')
+				}
+			}catch(err){
+				console.log(err.message, err);
+				res.send({
+					status: 0,
+					type: 'GET_ERROR_PARAM',
+					message: err.message,
+				})
+				return
+			}
+			try{
+				const admin = await AdminModel.findOne({user_name, password: this.encryption(password)});
+				if (!admin) {
+					console.log('用户名或密码错误');
+					res.send({
+						status: 0,
+						type: 'USER_INFO_INCORRECT',
+						message: '用户名或密码错误',
+					})
+				}else{
+					const newpassword = this.encryption(newPassword);
+					await AdminModel.update({user_name}, {password: newpassword});
+					res.send({
+						status: 1,
+						message: '密码修改成功',
+					})
+				}
+			}catch(err){
+				console.log('密码修改失败', err);
+				res.send({
+					status: 0,
+					type: 'REGISTER_ADMIN_FAILED',
+					message: '密码修改失败',
+				})
+			}
+		})
+	}
 	encryption(password){
 		const newpassword = this.Md5(this.Md5(password).substr(2, 7) + this.Md5(password));
 		return newpassword
@@ -162,6 +228,7 @@ class Admin extends AddressComponent {
 	}
 	async singout(req, res, next){
 		try{
+			console.error(req.session.admin_id);
 			delete req.session.admin_id;
 			res.send({
 				status: 1,

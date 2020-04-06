@@ -31,9 +31,9 @@ class Shop extends AddressComponent{
 		form.parse(req, async (err, fields, files) => {
 			try{
 				if (!fields.name) {
-					throw new Error('必须填写商店名称');
+					throw new Error('必须填写公司名称');
 				}else if(!fields.address){
-					throw new Error('必须填写商店地址');
+					throw new Error('必须填写公司地址');
 				}else if(!fields.phone){
 					throw new Error('必须填写联系电话');
 				}else if(!fields.latitude || !fields.longitude){
@@ -57,7 +57,7 @@ class Shop extends AddressComponent{
 				res.send({
 					status: 0,
 					type: 'RESTURANT_EXISTS',
-					message: '店铺已存在，请尝试其他店铺名称'
+					message: '公司已存在，请尝试其他公司名称'
 				})
 				return
 			}
